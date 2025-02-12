@@ -1,0 +1,5 @@
+for page in {1..2000}; do
+    for repo in $(curl -s "https://api.github.com/orgs/wp-plugins/repos?per_page=100&page=$page" | jq -r '.[].ssh_url'); do
+        git clone "$repo"
+    done
+done

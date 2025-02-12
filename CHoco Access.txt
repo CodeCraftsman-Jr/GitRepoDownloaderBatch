@@ -1,0 +1,55 @@
+Set-ExecutionPolicy Bypass -Scope Process -Force; [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072; iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))
+
+
+
+If `choco` is not found, it means **Chocolatey is not installed** on your system. You have two options:  
+
+---
+
+## ✅ **Option 1: Install Chocolatey (Recommended for Future Package Management)**
+Chocolatey is a package manager for Windows, allowing easy installation of tools like `jq`.
+
+### **Step 1: Open PowerShell as Administrator**
+1. Press `Win + S`, type **PowerShell**, right-click it, and select **Run as administrator**.
+
+### **Step 2: Install Chocolatey**
+Run this command:
+```powershell
+Set-ExecutionPolicy Bypass -Scope Process -Force; [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072; iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))
+```
+This will install Chocolatey.
+
+### **Step 3: Restart PowerShell or Command Prompt**
+Close and reopen the terminal, then verify the installation:
+```powershell
+choco --version
+```
+
+### **Step 4: Install `jq`**
+Now you can run:
+```powershell
+choco install jq
+```
+
+---
+
+## ✅ **Option 2: Download `jq` Manually (Alternative)**
+If you don’t want to install Chocolatey, you can manually download and install `jq`:
+
+1. **Download `jq.exe`** from the official site:  
+   👉 [https://github.com/stedolan/jq/releases](https://github.com/stedolan/jq/releases)
+2. Select the correct version:
+   - **Windows 64-bit:** `jq-win64.exe`
+   - **Windows 32-bit:** `jq-win32.exe`
+3. Rename the file to `jq.exe` and move it to:
+   ```
+   C:\Windows\System32
+   ```
+4. Open **Command Prompt** and check if it works:
+   ```sh
+   jq --version
+   ```
+
+---
+
+Now you should be able to use `jq` in **Git Bash, CMD, or PowerShell**! 🚀 Let me know if you need more help.

@@ -1,0 +1,86 @@
+curl -s https://api.github.com/users/analytic... | grep \"clone_url\" | awk '{print $2}' | sed -e 's/"//g' -e 's/,//g' | xargs -n1 git clone
+
+
+The URL you provided is a **GitHub organization repository page**, but it's a **web page** and not a direct API endpoint. To clone all repositories from `wp-plugins`, follow these steps:
+
+---
+
+## ✅ **Step 1: Install `jq` (JSON Processor)**
+We need `jq` to parse GitHub's API response. If you don't have it installed, do:
+
+- **Windows (Git Bash)**: Install Chocolatey, then run:
+  ```sh
+  choco install jq
+  ```
+- **Linux/macOS**:
+  ```sh
+  sudo apt install jq  # Ubuntu/Debian
+  brew install jq      # macOS (Homebrew)
+  ```
+
+---
+
+## ✅ **Step 2: Get a GitHub Token (Optional, for Private Repos)**
+If you need to **clone private repos**, create a **GitHub Personal Access Token (PAT)**:
+
+1. Go to [GitHub Personal Access Tokens](https://github.com/settings/tokens).
+2. Click **Generate new token** → Choose `repo` & `read:org` permissions.
+3. Copy and save the token.
+
+If you're cloning **only public repos**, you can skip this.
+
+---
+
+## ✅ **Step 3: Run This Command to Clone All Repositories**
+### **For Public Repositories (No Token Required)**
+```sh
+for repo in $(curl -s "https://api.github.com/orgs/wp-plugins/repos?per_page=100" | jq -r '.[].ssh_url'); do
+    git clone "$repo"
+done
+```
+
+### **For Private Repositories (Using a Token)**
+If you have private repos, use:
+```sh
+export ACCESS_TOKEN="your_github_token_here"
+for repo in $(curl -s -H "Authorization: token ${ACCESS_TOKEN}" "https://api.github.com/orgs/wp-plugins/repos?per_page=100" | jq -r '.[].ssh_url'); do
+    git clone "$repo"
+done
+```
+
+---
+
+## ✅ **Step 4: Handling More Than 100 Repositories**
+GitHub API limits responses to 100 repos per page. If `wp-plugins` has **more than 100 repos**, fetch multiple pages like this:
+```sh
+for page in {1..5}; do
+    for repo in $(curl -s "https://api.github.com/orgs/wp-plugins/repos?per_page=100&page=$page" | jq -r '.[].ssh_url'); do
+        git clone "$repo"
+    done
+done
+```
+Change `{1..5}` depending on the number of repos.
+
+---
+
+## ✅ **Step 5: Use SSH Instead of HTTPS (If Needed)**
+By default, the command uses SSH (`git@github.com:wp-plugins/repo.git`).  
+If you want **HTTPS cloning**, replace `ssh_url` with `clone_url` in the command:
+```sh
+jq -r '.[].clone_url'
+```
+
+---
+
+### 🛠 **Troubleshooting**
+1. **`command not found: jq`?**  
+   → Install `jq` as shown in Step 1.
+2. **`Permission denied (publickey)`?**  
+   → Set up an [SSH key](https://docs.github.com/en/authentication/connecting-to-github-with-ssh) or use HTTPS.
+3. **Too Many Repos?**  
+   → Increase the page limit in the loop.
+
+---
+
+This method ensures **all repositories** from `wp-plugins` are cloned efficiently. 🚀  
+Let me know if you need modifications!
