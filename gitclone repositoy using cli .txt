@@ -1,0 +1,26 @@
+# Start by setting a limit for each batch
+$page = 1
+$per_page = 55000
+
+while ($true) {
+    # Get the list of repositories (limit to 1000 repositories per request)
+    $repos = gh repo list wp-plugins --limit $per_page --json name -q ".[] | .name"
+    
+    # If no repositories are returned, break the loop
+    if ($repos.Count -eq 0) {
+        break
+    }
+    
+    # Clone each repository
+    foreach ($repo in $repos) {
+        gh repo clone "wp-plugins/$repo"
+    }
+    
+    # If fewer than $per_page repositories were returned, exit the loop
+    if ($repos.Count -lt $per_page) {
+        break
+    }
+    
+    # Increment the page number for the next iteration
+    $page++
+}

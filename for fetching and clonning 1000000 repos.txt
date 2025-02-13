@@ -1,0 +1,76 @@
+PS C:\Users\DBMS\Music\Plugins> $repo_owner = "wp-plugins"
+PS C:\Users\DBMS\Music\Plugins> $batch_size = 1000  # GitHub max per request
+PS C:\Users\DBMS\Music\Plugins> $max_parallel_jobs = 5  # Adjust for your system
+PS C:\Users\DBMS\Music\Plugins> $clone_path = "C:\Users\DBMS\music\plugins"  # Set your directory
+PS C:\Users\DBMS\Music\Plugins>
+PS C:\Users\DBMS\Music\Plugins> # Ensure the directory exists
+PS C:\Users\DBMS\Music\Plugins> if (!(Test-Path -Path $clone_path)) {
+>>     New-Item -ItemType Directory -Path $clone_path | Out-Null
+>> }
+PS C:\Users\DBMS\Music\Plugins>
+PS C:\Users\DBMS\Music\Plugins> Set-Location -Path $clone_path  # Navigate to the target directory
+PS C:\Users\DBMS\music\plugins>
+PS C:\Users\DBMS\music\plugins> $cursor = ""  # Cursor for pagination
+PS C:\Users\DBMS\music\plugins> $total_repos = 0  # Counter for total repositories processed
+PS C:\Users\DBMS\music\plugins>
+PS C:\Users\DBMS\music\plugins> while ($true) {
+>>     Write-Host "Fetching next $batch_size repositories from $repo_owner..."
+>>
+>>     # Fetch repositories with pagination
+>>     if ($cursor -eq "") {
+>>         $repos = gh api "orgs/$repo_owner/repos?per_page=$batch_size" --jq ".[].name"
+>>     } else {
+>>         $repos = gh api "orgs/$repo_owner/repos?per_page=$batch_size&page=$cursor" --jq ".[].name"
+>>     }
+>>
+>>     # Stop if no more repositories are found
+>>     if ($repos.Count -eq 0) {
+>>         Write-Host "No more repositories found. Exiting loop."
+>>         break
+>>     }
+>>
+>>     $total_repos += $repos.Count
+>>     Write-Host "Total repositories processed so far: $total_repos"
+>>
+>>     $jobList = @()
+>>
+>>     foreach ($repo in $repos) {
+>>         $repoPath = "$clone_path\$repo"
+>>
+>>         # Skip if the repository folder already exists
+>>         if (Test-Path -Path $repoPath) {
+>>             Write-Host "Skipping already cloned repository: $repo"
+>>             continue
+>>         }
+>>
+>>         # Start a background job for cloning
+>>         $job = Start-Job -ScriptBlock {
+>>             param ($repo, $repo_owner, $clone_path)
+>>             Set-Location -Path $clone_path
+>>             Write-Host "Cloning repository: $repo"
+>>             gh repo clone "$repo_owner/$repo"
+>>         } -ArgumentList $repo, $repo_owner, $clone_path
+>>
+>>         $jobList += $job
+>>
+>>         # Limit the number of parallel jobs
+>>         while ($jobList.Count -ge $max_parallel_jobs) {
+>>             $jobList = $jobList | Where-Object { $_.State -eq 'Running' }
+>>             Start-Sleep -Seconds 5  # Wait for some jobs to finish
+>>         }
+>>     }
+>>
+>>     # Wait for all background jobs to complete before fetching the next batch
+>>     Write-Host "Waiting for all cloning jobs to complete..."
+>>     Get-Job | Wait-Job | Out-Null
+>>     Get-Job | Remove-Job
+>>
+>>     # Move to the next batch (GitHub uses page numbers for pagination)
+>>     $cursor++
+>>
+>>     # Stop if we received fewer than batch_size repositories (means no more left)
+>>     if ($repos.Count -lt $batch_size) {
+>>         Write-Host "Fetched fewer than $batch_size repositories. Stopping."
+>>         break
+>>     }
+>> }

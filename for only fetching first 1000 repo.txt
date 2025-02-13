@@ -1,0 +1,26 @@
+PS C:\Users\DBMS\music\plugins> # Set a limit for each batch of repositories
+PS C:\Users\DBMS\music\plugins> $per_page = 1000
+PS C:\Users\DBMS\music\plugins> $page = 1
+PS C:\Users\DBMS\music\plugins>
+PS C:\Users\DBMS\music\plugins> while ($true) {
+>>     # Get the list of repositories (limit to 1000 repositories per request)
+>>     $repos = gh repo list wp-plugins --limit $per_page --json name -q ".[] | .name"
+>>
+>>     # If no repositories are returned, stop the loop
+>>     if ($repos.Count -eq 0) {
+>>         break
+>>     }
+>>
+>>     # Clone each repository in the list
+>>     foreach ($repo in $repos) {
+>>         gh repo clone "wp-plugins/$repo"
+>>     }
+>>
+>>     # If fewer than $per_page repositories are returned, break the loop
+>>     if ($repos.Count -lt $per_page) {
+>>         break
+>>     }
+>>
+>>     # Increment page counter (if using pagination is required for GitHub API)
+>>     $page++
+>> }
